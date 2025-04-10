@@ -1,6 +1,8 @@
 package com.domination.common;
 
-public class URL {
+import java.io.Serializable;
+
+public class URL implements Serializable {
     private String hostname;
     private Integer port;
 
