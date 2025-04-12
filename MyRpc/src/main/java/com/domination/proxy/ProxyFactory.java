@@ -1,40 +1,58 @@
 package com.domination.proxy;
 
+import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.domination.common.Invocation;
-import com.domination.common.URL;
-import com.domination.loadbalance.Loadbalance;
-import com.domination.protocol.HttpClient;
-import com.domination.register.RemoteRegister;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
+import com.domination.protocol.TcpClient;
+import com.domination.util.NacosServiceDiscovery;
 import java.lang.reflect.Proxy;
-import java.util.List;
 
+@SuppressWarnings("unchecked")
 public class ProxyFactory {
+    // 同步调用
+    public static <T> T getSyncProxy(Class<T> interfaceClass, String implName, String version) {
+        return (T) Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[]{interfaceClass},
+                (proxy, method, args) -> {
+                    Invocation invocation = new Invocation(
+                            interfaceClass.getName(),
+                            implName,
+                            version,
+                            method.getName(),
+                            method.getParameterTypes(),
+                            args,
+                            null // 同步调用，不需要 callbackUrl
+                    );
 
-    public static <T> T getProxy(Class interfaceClass) {
-        // 用户配置
+                    Instance instance = NacosServiceDiscovery.getOneInstance(interfaceClass.getName());
+                    String ip = instance.getIp();
+                    int port = instance.getPort();
+                    Class<?> returnType = method.getReturnType();
 
-        Object proxyInstance = Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[]{interfaceClass}, new InvocationHandler() {
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                Invocation invocation = new Invocation(interfaceClass.getName(), method.getName(),
-                        method.getParameterTypes(), args);
-
-                HttpClient httpClient = new HttpClient();
-                // 服务发现
-                List<URL> list = RemoteRegister.get(interfaceClass.getName());
-
-                URL url = Loadbalance.random(list);
-
-                // 服务调用
-                String result = httpClient.send(url.getHostname(), url.getPort(), invocation);
-
-                return result;
-
-            }
-        });
-        return (T) proxyInstance;
+                    TcpClient client = new TcpClient();
+                    return client.sendSync(ip, port, invocation, returnType); // 使用同步 send 方法
+                });
     }
+    // 异步调用
+    public static <T> T getAsyncProxy(Class<T> interfaceClass, String implName, String version) {
+        return (T) Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[]{interfaceClass},
+                (proxy, method, args) -> {
+                    Invocation invocation = new Invocation(
+                            interfaceClass.getName(),
+                            implName,
+                            version,
+                            method.getName(),
+                            method.getParameterTypes(),
+                            args,
+                            "tcp://127.0.0.1:9999" // 异步调用需要 callbackUrl
+                    );
 
+                    Instance instance = NacosServiceDiscovery.getOneInstance(interfaceClass.getName());
+                    String ip = instance.getIp();
+                    int port = instance.getPort();
+
+                    TcpClient client = new TcpClient();
+                    client.sendAsync(ip, port, invocation); // 异步发送
+
+                    return null;
+                });
+    }
 }

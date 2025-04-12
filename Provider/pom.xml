@@ -34,5 +34,11 @@
             <artifactId>MyRpc</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
+        <!-- SLF4J Simple 版（快速运行，控制台输出） -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.36</version>
+        </dependency>
     </dependencies>
 </project>

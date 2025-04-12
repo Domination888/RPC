@@ -1,6 +1,6 @@
 package com.domination;
 
-public class HelloServiceImpl implements HelloService {
+public class HelloServiceImpl2 implements HelloService {
     @Override
     public String sayHello(String name) {
         try {
@@ -8,6 +8,6 @@ public class HelloServiceImpl implements HelloService {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        return "Hello1, " + name;
+        return "Hello2, " + name;
     }
 }
