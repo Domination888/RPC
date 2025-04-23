@@ -1,0 +1,2 @@
+com.domination.serialize.Jackson.JacksonSerializer
+com.domination.serialize.Fastjson.FastjsonSerializer
